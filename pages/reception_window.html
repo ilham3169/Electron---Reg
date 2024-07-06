@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reception</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/bootstrap.min.css">
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.4.1/font/bootstrap-icons.min.css">
+</head>
+
+<body id="reception">
+  <div class="main-container">
+    <div class="form-container">
+      <input type="text" name="search_name" id="search_input" placeholder="Ilham Yagubzade"><br>
+      <button type="button" class="btn btn-primary" id="search_button">Search</button><br>
+      <button type="button" class="btn btn-danger" id="delete_button" disabled>Delete</button><br>
+      <button type="button" class="btn btn-success" id="add_button">Add</button><br>
+      <button type="button" class="btn btn-info" id="refresh_button">Refresh</button>
+    </div>
+    <div class="table-container">
+      <table class="table table-striped" id="table">
+        <thead>
+          <tr>
+            <th style="text-align: center; width: 3%;">ID</th>
+            <th style="text-align: center; width: 7%;">Name</th>
+            <th style="text-align: center; width: 7%;">Surname</th>
+            <th style="text-align: center; width: 3%;">Gender</th>
+            <th style="text-align: center; width: 8%;">Birth date</th>
+            <th style="text-align: center; width: 8%;">Related doctor</th>
+            <th style="text-align: center; width: 8%;">Registration date</th>
+            <th style="text-align: center; width: 7%;">Enter left count</th>
+            <!-- <th style="text-align: center; width: 15%;">About</th> -->
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <!-- Placeholder row to be replaced by data -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+
+<script>
+  let x = 0;
+  const electron = require("electron");
+  const { ipcRenderer } = electron;
+
+  let selectedRowId = null;
+
+  window.addEventListener('load', () => {
+    console.log('Window has opened and all resources have loaded.');
+    ipcRenderer.send('refresh_requests');
+  });
+
+  document.getElementById("add_button").addEventListener("click", () => {
+    ipcRenderer.send("create_add_window");
+    document.getElementById("add_button").disabled = true;
+  });
+
+  ipcRenderer.on("add_window_closed", () => {
+    document.getElementById("add_button").disabled = false;
+  });
+
+  document.getElementById("refresh_button").addEventListener("click", () => {
+    ipcRenderer.send("refresh_requests");
+  });
+
+  document.getElementById("search_button").addEventListener("click", () => {
+    const searchInput = document.getElementById('search_input').value.trim();
+    if (searchInput !== '') {
+      ipcRenderer.send("search_request", searchInput);
+    }
+  });
+
+  ipcRenderer.on("refreshing", (err, data) => {
+    const tableBody = document.getElementById('table-body');
+    tableBody.innerHTML = '';
+
+    data.forEach(item => {
+      const [name, surname] = item.full_name.split(" ");
+      const row = document.createElement('tr');
+      row.setAttribute('data-id', item.id);
+
+      row.innerHTML = `
+      <td>${item.id}</td>
+      <td>${name}</td>
+      <td>${surname}</td>
+      <td>${item.gender}</td>
+      <td>${item.birthdate}</td>
+      <td>${item.doctor}</td>
+      <td>${item.reg_date}</td>
+      <td>${item.epd}</td>
+    `;
+
+      // Click event listener
+      row.addEventListener('click', function () {
+        const idCell = row.cells[0].innerText;
+        x = idCell;
+
+        if (selectedRowId === item.id) {
+          row.classList.remove('table-active');
+          selectedRowId = null;
+          document.getElementById("delete_button").disabled = true;
+          change_color(row, true);
+        } else {
+          const previousRow = tableBody.querySelector('.table-active');
+          if (previousRow) {
+            previousRow.classList.remove('table-active');
+            change_color(previousRow, true);
+          }
+          row.classList.add('table-active');
+          selectedRowId = item.id;
+          document.getElementById("delete_button").disabled = false;
+          change_color(row, false);
+        }
+      });
+
+      // Double click event listener
+      row.addEventListener("dblclick", () => {
+        const idCell = row.cells[0].innerText;
+        x = idCell;
+        ipcRenderer.send("newAboutWindow", x);
+      });
+
+      tableBody.appendChild(row);
+    });
+
+    document.getElementById("delete_button").disabled = true;
+    selectedRowId = null;
+  });
+
+  document.getElementById("delete_button").addEventListener("click", () => {
+    if (selectedRowId !== null) {
+      if (confirm("Do you want to delete : " + x + "?")) {
+        document.getElementById("delete_button").disabled = true;
+        ipcRenderer.send("delete_request", x);
+        document.getElementById("refresh_button").click();
+      }
+    }
+  });
+
+  ipcRenderer.on("search_data", (event, data) => {
+    const tableBody = document.getElementById('table-body');
+    tableBody.innerHTML = ''; // Clear previous rows
+
+    data.forEach(item => {
+      const [name, surname] = item.full_name.split(" ");
+      const row = document.createElement('tr');
+      row.setAttribute('data-id', item.id);
+
+      row.innerHTML = `
+            <td>${item.id}</td>
+            <td>${name}</td>
+            <td>${surname}</td>
+            <td>${item.gender}</td>
+            <td>${item.birthdate}</td>
+            <td>${item.doctor}</td>
+            <td>${item.reg_date}</td>
+            <td>${item.epd}</td>
+        `;
+
+      // Click event listener
+      row.addEventListener('click', function () {
+        const idCell = row.cells[0].innerText;
+        x = idCell;
+
+        if (selectedRowId === item.id) {
+          row.classList.remove('table-active');
+          selectedRowId = null;
+          document.getElementById("delete_button").disabled = true;
+          change_color(row, true);
+        } else {
+          const previousRow = tableBody.querySelector('.table-active');
+          if (previousRow) {
+            previousRow.classList.remove('table-active');
+            change_color(previousRow, true);
+          }
+          row.classList.add('table-active');
+          selectedRowId = item.id;
+          document.getElementById("delete_button").disabled = false;
+          change_color(row, false);
+        }
+      });
+
+      // Double click event listener
+      row.addEventListener("dblclick", () => {
+        const idCell = row.cells[0].innerText;
+        x = idCell;
+        ipcRenderer.send("newAboutWindow", x);
+      });
+
+      tableBody.appendChild(row);
+    });
+  });
+
+  ipcRenderer.on("close_submit", () => {
+    document.getElementById("refresh_button").click();
+  });
+
+  function change_color(row, reset) {
+    const tds = row.getElementsByTagName('td');
+    for (let i = 0; i < tds.length; i++) {
+      tds[i].style.backgroundColor = reset ? '' : 'violet';
+    }
+  }
+</script>
+
+</html>

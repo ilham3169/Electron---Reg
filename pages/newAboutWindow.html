@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>HIHIHI</title>
+      <link rel="stylesheet" href="../assets/style_newAboutWindow.css">
+
+</head>
+
+<body>
+
+</body>
+
+<script>
+      const electron = require("electron");
+      const { ipcRenderer } = electron;
+
+      ipcRenderer.on("newAboutWindow", (err, data) => {
+            console.log("asd");
+      })
+</script>
+
+</html>

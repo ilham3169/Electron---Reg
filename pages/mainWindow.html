@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+
+<body id = "login">
+  <form action="">
+    <h2>Giriş</h2>
+    <h3 id="welcome_label"></h3>
+    <input type="text" name="username" id="username" placeholder="Enter Username" autocomplete="false">
+    <input type="password" name="password" id="password" placeholder="Enter password" autocomplete="false">
+    <input type="submit" name="submit" id="submit" value="Giriş et">
+  </form>
+
+  <script>
+    const electron = require("electron");
+    const { ipcRenderer } = electron;
+
+    const usernameValue = document.getElementById("username");
+    const passwordValue = document.getElementById("password");
+    const submitBtn = document.getElementById("submit");
+
+    submitBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+
+      let data = [];
+      data.push(usernameValue.value);
+      data.push(passwordValue.value);
+
+      ipcRenderer.send("submit", data);
+    });
+
+    ipcRenderer.on("successlogin", (e, results) => {
+      document.getElementById("welcome_label").innerText = "Welcome " + results;
+      document.getElementById("welcome_label").style.color = "green";
+    })
+
+    ipcRenderer.on("faillogin", () => {
+      document.getElementById("welcome_label").innerText = "Wrong Credentials"
+      document.getElementById("welcome_label").style.color = "red";
+    })
+
+  </script>
+
+</body>
+
+</html>
